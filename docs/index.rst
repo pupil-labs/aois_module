@@ -7,7 +7,7 @@ Welcome to |project| documentation!
    history
 
 
-.. automodule:: skeleton
+.. automodule:: aois_module
     :members:
     :undoc-members:
     :show-inheritance:

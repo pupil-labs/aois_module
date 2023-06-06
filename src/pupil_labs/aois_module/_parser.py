@@ -109,7 +109,7 @@ def init_parser():
         group.add_argument(
             "-dino",
             "--dino-text-input",
-            default="bottle",
+            default=None,
             type=str,
             help="What should it look like for",
         )

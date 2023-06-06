@@ -1,4 +1,4 @@
-import os, logging, cv2, io, struct
+import os, logging, cv2, io, struct, torch
 import numpy as np  # For numerical operations
 import pandas as pd  # For data manipulation
 
@@ -6,6 +6,7 @@ import matplotlib as mpl  # For plotting
 import matplotlib.pyplot as plt
 from matplotlib import patches
 import seaborn as sns
+from PIL import Image, ImageDraw, ImageFont
 
 from timeit import default_timer as timer  # For timing the code
 
@@ -18,6 +19,8 @@ from pupil_labs.aois_module._helpers import (
     get_path,
     confirm_read,
     scale_img,
+    draw_box,
+    draw_mask,
 )  # For selecting the input folder
 
 from pupil_labs.aois_module._report import generate_report
@@ -38,6 +41,7 @@ if verbit != 64:
     raise Exception(error)
 
 sns.set_context("talk")
+sns.color_palette("pastel")
 logging.getLogger("defineAOIs")
 logging.basicConfig(
     format="%(message)s",
@@ -71,10 +75,9 @@ class defineAOIs:
             os.path.join(self.input_path, "reference_image.jpeg")
         )
         self.reference_image = cv2.cvtColor(self.reference_image_bgr, cv2.COLOR_BGR2RGB)
-        self.device = "cpu"
-        # (
-        #     "cuda" if torch.cuda.is_available() else "mps" if torch.has_mps else "cpu"
-        # )
+        self.device = (
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )  # else "mps" if torch.has_mps
 
         self = scale_img(self)
         if self.aois is None and self.is_sam:
@@ -148,9 +151,9 @@ class defineAOIs:
             self.aois = None
             filenames = ["aoi_ids.pkl", "aoi_ids_sam.pkl"]
             for filename in filenames:
-                if os.path.exists(os.path.join(self.input_path, filename)):
+                if os.path.exists(os.path.join(self.output_path, filename)):
                     logging.info("AOIs already defined on that folder, reusing them")
-                    self.aois_path = os.path.join(self.input_path, filename)
+                    self.aois_path = os.path.join(self.output_path, filename)
                     self.aois = pd.read_pickle(self.aois_path)
                     self.is_sam = True if "segmentation" in self.aois.columns else False
         if isinstance(self.aois, pd.DataFrame):
@@ -178,6 +181,7 @@ class defineAOIs:
             if not aoi_id in self.hit_rate.index:
                 self.hit_rate.loc[aoi_id] = 0
         self.hit_rate.sort_index(inplace=True)
+        self.hit_rate = self.hit_rate[self.hit_rate > 0]
         self.current = {
             "var": self.hit_rate,
             "title": "Hit Rate",
@@ -330,25 +334,11 @@ class defineAOIs:
         values_normed -= values_normed.min()
         values_normed /= values_normed.max()
 
-        colors = mpl.colormaps["viridis"]
+        colors = mpl.colormaps["gnuplot"]
 
-        for aoi_id, aoi_val in values_normed.items():
-            aoi_id = int(aoi_id)
-            if self.is_sam:
-                if self.mask_output == "coco_rle":
-                    aoi = mask_utils.decode(self.aois.loc[aoi_id].segmentation)
-                else:
-                    aoi = self.aois.loc[aoi_id].segmentation
-                color = np.append(colors(aoi_val)[:3], 0.5) * 255
-                ref_image[aoi] = color
-                ax.text(
-                    self.aois.point_coords[aoi_id][0][0],
-                    self.aois.point_coords[aoi_id][0][1],
-                    f"{aoi_id}",
-                    color="black",
-                    fontsize="xx-small",
-                )
-            else:
+        if not self.is_sam:
+            for aoi_id, aoi_val in values_normed.items():
+                aoi_id = int(aoi_id)
                 aoi = [
                     self.aois.x[aoi_id],
                     self.aois.y[aoi_id],
@@ -366,6 +356,12 @@ class defineAOIs:
                     )
                 )
                 ax.text(aoi[0] + 20, aoi[1] + 120, f"{aoi_id}", color="black")
+        else:
+            ref_image = Image.fromarray(ref_image)
+            draw = ImageDraw.Draw(ref_image)
+            draw_mask(self.aois.segmentation, draw, colors)
+            if self.dino_text_input is not None:
+                draw_box(self.aois.bbox, self.aois.label, draw, colors)
 
         ax.imshow(ref_image)
         ax.axis("off")
@@ -414,6 +410,10 @@ class defineAOIs:
         )
         ax[0].set_xlabel("AOI ID")
         ax[0].set_ylabel(self.current["ylabel"])
+        if "label" in self.aois.columns:
+            aoi_id = self.current["var"].index.to_numpy(dtype=np.int64)
+            ax[0].set_xticklabels(self.aois.label[aoi_id], rotation=90)
+        ax[0].set_title(self.current["title"])
         self.plot_color_patches(
             self.current["var"], unit_label=self.current["ylabel"], **kwargs
         )

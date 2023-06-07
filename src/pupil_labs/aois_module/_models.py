@@ -161,7 +161,7 @@ def predict_sam(self, debug=False):
         )
         transformed_boxes = self.mg.transform.apply_boxes_torch(
             boxes_xyxy, self.scaled_image.shape[:2]
-        )
+        ).to(self.device)
 
         masks, _, _ = self.mg.predict_torch(
             point_coords=None,

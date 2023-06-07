@@ -26,6 +26,10 @@ from segment_anything import (
     SamPredictor,
 )
 
+import warnings
+
+warnings.filterwarnings("ignore")  # just to have a clean output
+
 SAM_MODELS = {
     "vit_h": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth",
     "vit_l": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth",

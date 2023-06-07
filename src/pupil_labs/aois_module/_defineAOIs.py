@@ -181,7 +181,8 @@ class defineAOIs:
             if not aoi_id in self.hit_rate.index:
                 self.hit_rate.loc[aoi_id] = 0
         self.hit_rate.sort_index(inplace=True)
-        self.hit_rate = self.hit_rate[self.hit_rate > 0]
+        if len(self.hit_rate) > 10:
+            self.hit_rate = self.hit_rate[self.hit_rate > 0]
         self.current = {
             "var": self.hit_rate,
             "title": "Hit Rate",
@@ -303,14 +304,13 @@ class defineAOIs:
             return hit
 
         for row in self.aois.itertuples():
-            data_in_aoi = self.data.copy()
             if not self.is_sam:
-                data_in_aoi = self.data.loc[
-                    check_in_rect(self, [row.x, row.y, row.width, row.height])
-                ]
+                data_in_aoi_index = check_in_rect(
+                    self, [row.x, row.y, row.width, row.height]
+                )
             else:
-                data_in_aoi = self.data.loc[check_in_mask(self, row.segmentation)]
-            self.data.loc[data_in_aoi.index, "AOI"] = row.Index
+                data_in_aoi_index = check_in_mask(self, row.segmentation)
+            self.data.loc[data_in_aoi_index, "AOI"] = row.Index
 
         logging.info(
             f"A total of %d {self.type} points were detected in AOIs", len(self.data)
@@ -432,6 +432,10 @@ class defineAOIs:
         generate_report(self)
 
 
-if __name__ == "__main__":
+def main():
     aois = defineAOIs()
     aois.run()
+
+
+if __name__ == "__main__":
+    main()

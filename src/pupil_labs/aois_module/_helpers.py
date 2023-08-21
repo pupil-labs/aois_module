@@ -7,6 +7,8 @@ import tkinter as tk  # For GUI
 from tkinter import filedialog
 from PIL import ImageFont
 
+from pycocotools import mask as mask_utils
+
 
 def get_path():
     root = tk.Tk()
@@ -64,8 +66,10 @@ def scale_img(self, save=False):
     return self
 
 
-def draw_mask(masks, draw, colors):
+def draw_mask(self, masks, draw, colors):
     for mask_id, mask in enumerate(masks):
+        if self.mask_output == "coco_rle":
+            mask = mask_utils.decode(mask)
         color = colors(mask_id)
         color = tuple([int(255 * c) for c in color])
         nonzero_coords = np.transpose(np.nonzero(mask))

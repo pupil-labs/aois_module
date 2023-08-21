@@ -6,7 +6,7 @@ import matplotlib as mpl  # For plotting
 import matplotlib.pyplot as plt
 from matplotlib import patches
 import seaborn as sns
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 from timeit import default_timer as timer  # For timing the code
 
@@ -40,8 +40,10 @@ if verbit != 64:
     error = "Sorry, this script only works on 64 bit systems!"
     raise Exception(error)
 
-sns.set_context("talk")
-sns.color_palette("pastel")
+sns.set_context("paper")
+sns.set_theme(style="whitegrid", palette="deep", font_scale=1.3)
+
+
 logging.getLogger("defineAOIs")
 logging.basicConfig(
     format="%(message)s",
@@ -122,7 +124,6 @@ class defineAOIs:
         if self.output_path is None or not os.path.exists(self.output_path):
             self.output_path = os.path.join(self.input_path, "output")
             os.makedirs(self.output_path, exist_ok=True)
-        self.mask_output = "binary_mask"
         logging.info("Input path: %s", self.input_path)
 
     def get_sq_aois(self):
@@ -158,6 +159,7 @@ class defineAOIs:
                     self.is_sam = True if "segmentation" in self.aois.columns else False
         if isinstance(self.aois, pd.DataFrame):
             self.scaling_factor = self.aois.scaling_factor[0]
+            logging.info(self.aois.columns)
 
     def save_aois(self):
         self.aois["scaling_factor"] = self.scaling_factor
@@ -359,7 +361,7 @@ class defineAOIs:
         else:
             ref_image = Image.fromarray(ref_image)
             draw = ImageDraw.Draw(ref_image)
-            draw_mask(self.aois.segmentation, draw, colors)
+            draw_mask(self, self.aois.segmentation, draw, colors)
             if self.dino_text_input is not None:
                 draw_box(self.aois.bbox, self.aois.label, draw, colors)
 

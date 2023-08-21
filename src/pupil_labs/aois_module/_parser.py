@@ -70,7 +70,7 @@ def init_parser():
             help="Path to the output folder, where to save the results",
         )
 
-    @group_decorator("events")
+    @group_decorator("Events")
     def events_group(group):
         group.add_argument(
             "--start",
@@ -87,7 +87,7 @@ def init_parser():
         group.add_argument(
             "-sam",
             "--is_sam",
-            default=True,
+            default=False,
             type=bool,
             help="Whether to use segment anything to automatically segment the AOIs or not",
         )
@@ -98,6 +98,12 @@ def init_parser():
             type=str,
             choices=list(SAM_MODELS.keys()),
             help="Path to the SAM model",
+        )
+        group.add_argument(
+            "--mask_output",
+            default="binary_mask",
+            choices=["coco_rle", "binary_mask"],
+            type=str,
         )
         group.add_argument(
             "-aois",

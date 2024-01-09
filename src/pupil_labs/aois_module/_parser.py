@@ -1,5 +1,6 @@
 import argparse
 from enum import Enum
+
 from pupil_labs.aois_module._models import SAM_MODELS
 
 
@@ -69,6 +70,13 @@ def init_parser():
             type=str,
             help="Path to the output folder, where to save the results",
         )
+        group.add_argument(
+            "-cloud",
+            "--upload2cloud",
+            default=False,
+            type=bool,
+            help="Whether to upload to Cloud or not",
+        )
 
     @group_decorator("Events")
     def events_group(group):
@@ -87,7 +95,7 @@ def init_parser():
         group.add_argument(
             "-sam",
             "--is_sam",
-            default=False,
+            default=True,
             type=bool,
             help="Whether to use segment anything to automatically segment the AOIs or not",
         )
@@ -117,7 +125,7 @@ def init_parser():
             "--dino-text-input",
             default=None,
             type=str,
-            help="What should it look like for",
+            help="What should I look for? eg. player, tv, ...",
         )
         group.add_argument(
             "--scaling_factor",

@@ -1,39 +1,34 @@
-import os, logging, cv2, io, struct, torch
-import numpy as np  # For numerical operations
-import pandas as pd  # For data manipulation
-
-import matplotlib as mpl  # For plotting
-import matplotlib.pyplot as plt
-from matplotlib import patches
-import seaborn as sns
-from PIL import Image, ImageDraw
-
+import io
+import logging
+import os
+import struct
 from timeit import default_timer as timer  # For timing the code
 
-from pupil_labs.aois_module._parser import (
-    init_parser,
-    MetricClasses,
-    DataClasses,
-)  # For parsing the arguments
-from pupil_labs.aois_module._helpers import (
-    get_path,
-    confirm_read,
-    scale_img,
-    draw_box,
-    draw_mask,
-)  # For selecting the input folder
+import cv2
+import matplotlib as mpl  # For plotting
+import matplotlib.pyplot as plt
+import numpy as np  # For numerical operations
+import pandas as pd  # For data manipulation
+import seaborn as sns
+import torch
+from matplotlib import patches
+from PIL import Image, ImageDraw
+from pycocotools import mask as mask_utils
+from rich.logging import RichHandler  # For logging
 
-from pupil_labs.aois_module._report import generate_report
+# For parsing the arguments
+from pupil_labs.aois_module._helpers import draw_box, draw_mask, get_path, scale_img
 from pupil_labs.aois_module._models import (
     build_dino,
     build_sam_model,
-    predict_sam,
     predict_dino,
+    predict_sam,
 )
+from pupil_labs.aois_module._parser import DataClasses, MetricClasses, init_parser
 
-from rich.logging import RichHandler  # For logging
-
-from pycocotools import mask as mask_utils
+# For selecting the input folder
+from pupil_labs.aois_module._report import generate_report
+from pupil_labs.aois_module._to_cloud import post_aoi
 
 verbit = struct.calcsize("P") * 8
 if verbit != 64:
@@ -91,24 +86,27 @@ class defineAOIs:
         elif self.aois is None and not self.is_sam:
             self.get_sq_aois()
 
-        self.load_files()
+        if self.upload2cloud:
+            self.toCloud()
+
+        # self.load_files()
         self.report_aois()
         self.figure = {}
         ax = self.plot_color_patches(
             values=pd.Series(self.aois.index), ax=plt.gca(), save=True
         )
 
-        self.in_aoi()
+        # self.in_aoi()
 
-        if self.metric in [MetricClasses.hit_rate, MetricClasses.all]:
-            self.compute_hit_rate()
-        if self.metric in [MetricClasses.first_contact, MetricClasses.all]:
-            self.compute_first_contact()
-        if self.metric in [MetricClasses.dwell_time, MetricClasses.all]:
-            self.compute_dwell_time()
+        # if self.metric in [MetricClasses.hit_rate, MetricClasses.all]:
+        #     self.compute_hit_rate()
+        # if self.metric in [MetricClasses.first_contact, MetricClasses.all]:
+        #     self.compute_first_contact()
+        # if self.metric in [MetricClasses.dwell_time, MetricClasses.all]:
+        #     self.compute_dwell_time()
 
-        self.save_aois()
-        self.create_report()
+        # self.save_aois()
+        # self.create_report()
         logging.info("Done")
 
     def sanity_checks(self):
@@ -122,7 +120,19 @@ class defineAOIs:
         if self.input_path is None or not os.path.exists(self.input_path):
             self.input_path = get_path()
         if self.output_path is None or not os.path.exists(self.output_path):
-            self.output_path = os.path.join(self.input_path, "output")
+            from datetime import datetime
+
+            self.output_path = os.path.join(
+                self.input_path,
+                "output_aois",
+                datetime.today().strftime("%Y-%m-%d"),
+            )
+            counter = 0
+            new_output_path = self.output_path
+            while os.path.exists(new_output_path):
+                counter += 1
+                new_output_path = f"{new_output_path}_{counter}"
+            self.output_path = new_output_path
             os.makedirs(self.output_path, exist_ok=True)
         logging.info("Input path: %s", self.input_path)
 
@@ -145,7 +155,7 @@ class defineAOIs:
         self = predict_sam(self)
 
     def load_aois(self):
-        if self.aois_path != None:
+        if self.aois_path is not None:
             self.aois = pd.read_pickle(self.aois_path)
             self.is_sam = True if "segmentation" in self.aois.columns else False
         else:
@@ -180,7 +190,7 @@ class defineAOIs:
             hits.groupby("AOI").sum() / self.data["recording id"].nunique() * 100
         )
         for aoi_id in range(len(self.aois)):
-            if not aoi_id in self.hit_rate.index:
+            if aoi_id not in self.hit_rate.index:
                 self.hit_rate.loc[aoi_id] = 0
         self.hit_rate.sort_index(inplace=True)
         if len(self.hit_rate) > 10:
@@ -382,7 +392,7 @@ class defineAOIs:
                 field0 = "gaze detected in reference image"
                 field1 = "gaze position in reference image x [px]"
                 field2 = "gaze position in reference image y [px]"
-            data_in = data[data[field0] == True]
+            data_in = data[data[field0] is True]
             ax.scatter(data_in[field1], data_in[field2], s=20, color="red", alpha=0.8)
 
         plt.draw()
@@ -432,6 +442,12 @@ class defineAOIs:
 
     def create_report(self):
         generate_report(self)
+
+    def toCloud(self):
+        index = 0
+        for index, aoi in self.aois.iterrows():
+            index += 1
+            post_aoi(aoi.segmentation, aoi.label, aoi.bbox, index)
 
 
 def main():

@@ -1,12 +1,12 @@
-import os, platform
 import logging
-import cv2
-import numpy as np
-
+import os
+import platform
 import tkinter as tk  # For GUI
 from tkinter import filedialog
-from PIL import ImageFont
 
+import cv2
+import numpy as np
+from PIL import ImageFont
 from pycocotools import mask as mask_utils
 
 
@@ -25,7 +25,7 @@ def get_path():
         or not os.path.exists(os.path.join(path, "sections.csv"))
         or not os.path.exists(os.path.join(path, "reference_image.jpeg"))
     ):
-        error = f"The selected folder does not contain a reference_image.jpeg, fixations.csv, gaze.csv or sections.csv files"
+        error = "The selected folder does not contain a reference_image.jpeg, fixations.csv, gaze.csv or sections.csv files"
         logging.error(error)
         raise SystemExit(error)
     root.destroy()

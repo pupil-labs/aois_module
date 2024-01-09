@@ -1,32 +1,26 @@
-import os, cv2
 import logging
+import os
+import warnings
+from pathlib import Path
+from timeit import default_timer as timer  # For timing the code
+
+import cv2
+import pandas as pd
 import torch
 import torchvision
-from torchvision.ops import box_convert
-from pathlib import Path
-import pandas as pd
-
-from timeit import default_timer as timer  # For timing the code
-from PIL import Image, ImageDraw
-from pupil_labs.aois_module._helpers import draw_mask, draw_box
-
-from huggingface_hub import hf_hub_download
-
-import groundingdino.datasets.transforms as T
 from groundingdino.models import build_model
 from groundingdino.util import box_ops
+from groundingdino.util.inference import annotate, predict
 from groundingdino.util.slconfig import SLConfig
-from groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
-from groundingdino.util.inference import annotate, load_image, predict
-
+from groundingdino.util.utils import clean_state_dict
+from huggingface_hub import hf_hub_download
+from PIL import Image, ImageDraw
+from pupil_labs.aois_module._helpers import draw_box, draw_mask
 from segment_anything import (
     SamAutomaticMaskGenerator,
-    sam_model_registry,
-    build_sam,
     SamPredictor,
+    sam_model_registry,
 )
-
-import warnings
 
 warnings.filterwarnings("ignore")  # just to have a clean output
 

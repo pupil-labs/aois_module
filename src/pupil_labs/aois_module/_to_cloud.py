@@ -8,12 +8,13 @@ import cv2
 import numpy as np
 import requests
 
-API_KEY = ""
-WORKSPACE_ID = ""
-PROJECT_ID = ""
-ENRICHMENT_ID = ""
+API_KEY = "4bsfwpCc7fdVXn5uvK6WJdWzcxpaafdMfrbBqEX3KMAR"
 
-API_URL = "https://api.cloud.pupil-labs.dev/v2"
+WORKSPACE_ID = "d6bde22c-0c74-4d7d-8ab6-65b665c3cb4e"
+PROJECT_ID = "56d10f4d-2899-4ddb-bef9-388c714dc812"
+ENRICHMENT_ID = "fd3bb74c-f377-4df8-9482-57c841361f56"
+
+API_URL = "https://api.cloud.pupil-labs.com/v2"
 URL = f"{API_URL}/workspaces/{WORKSPACE_ID}/projects/{PROJECT_ID}/enrichments/{ENRICHMENT_ID}/aois"
 
 COLORS = [

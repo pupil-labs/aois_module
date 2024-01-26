@@ -79,7 +79,7 @@ def main():
     nest_asyncio.apply()
     uvicorn.run(
         app,
-        port=8000,
+        port=8002,
     )
 
 

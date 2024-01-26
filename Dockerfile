@@ -7,10 +7,13 @@ WORKDIR /usr/src/app
 COPY . .
 
 # Install dependencies
-RUN pip install --no-cache-dir .
+RUN apt-get update && apt-get install -y \
+	libgl1-mesa-dev \
+	&& pip install --no-cache-dir .
 
 #Expose uvicorn/fastapi
-EXPOSE 8000
+EXPOSE 8002
 
 # Run entrypoint script when the container launches
-CMD pl_aois >> /usr/src/app/aois_log.out 2>&1 
+CMD ["uvicorn", "pupil_labs.aois_module._defineAOIs:app", "--host", "0.0.0.0", "--port", "8002"]
+

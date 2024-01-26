@@ -56,5 +56,4 @@ def draw_box(boxes, labels, draw, colors):
             bbox = (box[0], box[1], w + box[0], box[1] + h)
         draw.rectangle(bbox, fill=color)
         draw.text((box[0], box[1]), str(label), fill="white")
-
         draw.text((box[0], box[1]), label)

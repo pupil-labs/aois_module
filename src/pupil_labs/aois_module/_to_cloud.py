@@ -1,21 +1,11 @@
-import base64
 import logging
 import uuid
 from datetime import datetime
-from typing import Optional
 
-import cv2
 import numpy as np
 import requests
 
-API_KEY = "4bsfwpCc7fdVXn5uvK6WJdWzcxpaafdMfrbBqEX3KMAR"
-
-WORKSPACE_ID = "d6bde22c-0c74-4d7d-8ab6-65b665c3cb4e"
-PROJECT_ID = "56d10f4d-2899-4ddb-bef9-388c714dc812"
-ENRICHMENT_ID = "fd3bb74c-f377-4df8-9482-57c841361f56"
-
 API_URL = "https://api.cloud.pupil-labs.com/v2"
-URL = f"{API_URL}/workspaces/{WORKSPACE_ID}/projects/{PROJECT_ID}/enrichments/{ENRICHMENT_ID}/aois"
 
 COLORS = [
     "#39FF14",  # Neon Green
@@ -31,40 +21,22 @@ COLORS = [
 ]
 
 
-def encodeMask(img: np.array) -> str:
-    _, buffer = cv2.imencode(".png", img)
-    return base64.b64encode(buffer).decode("utf-8")
-
-
-def api_get(path: str) -> dict:
-    url = f"{API_URL}/{path}"
-    if (
-        requests.get(
-            url, headers={"api-key": API_KEY, "workspace_id": WORKSPACE_ID}
-        ).json()["status"]
-        == "success"
-    ):
-        return requests.get(
-            url, headers={"api-key": API_KEY, "workspace_id": WORKSPACE_ID}
-        ).json()["result"]
-    else:
-        error = requests.get(
-            url, headers={"api-key": API_KEY, "workspace_id": WORKSPACE_ID}
-        ).json()["message"]
-        log.error(error)
-        raise (Exception(error))
-
-
 def post_aoi(
-    img: np.array, label: str, bbox, index: int, url: Optional[str] = URL
+    mask: np.array, label: str, bbox, index: int, url: str, api_key: str
 ) -> dict:
-    h, w = img.shape
-    index = index % COLORS.__len__()
-    color = COLORS[index]
-    color = tuple(int(color[i : i + 2], 16) for i in (1, 3, 5))[::-1]
-    coloredMask = np.zeros((*img.shape, 4), dtype=np.uint8)
-    coloredMask[img] = color + (255,)
-    coloredMask[~img] = (0, 0, 0, 0)
+    (_, workspace_id, project_id, enrichment_id) = (
+        f"https://{url.split('/')[2]}",
+        url.split('/')[4],
+        url.split('/')[6],
+        url.split('/')[8],
+    )
+    # h, w = mask.shape
+    # index = index % COLORS.__len__()
+    # color = COLORS[index]
+    # color = tuple(int(color[i : i + 2], 16) for i in (1, 3, 5))[::-1]
+    # coloredMask = np.zeros((*mask.shape, 4), dtype=np.uint8)
+    # coloredMask[mask] = color + (255,)
+    # coloredMask[~mask] = (0, 0, 0, 0)
 
     payload = {
         # "bounding_box": {
@@ -80,24 +52,19 @@ def post_aoi(
         "color": COLORS[index],
         "created_at": datetime.utcnow().isoformat() + "Z",
         "description": "string",
-        "enrichment_id": ENRICHMENT_ID,
+        "enrichment_id": enrichment_id,
         "id": str(uuid.uuid4()),
-        "mask_image_data_url": "data:image/png;base64," + encodeMask(coloredMask),
+        "mask_image_data_url": "data:image/png;base64,"
+        + mask,  # AOI_Generator.encode_img(coloredMask),
         "name": label,
         "updated_at": datetime.utcnow().isoformat() + "Z",
     }
     r = requests.post(
-        url,
+        f"{API_URL}/workspaces/{workspace_id}/projects/{project_id}/enrichments/{enrichment_id}/aois",
         json=payload,
-        headers={"api-key": API_KEY, "workspace_id": WORKSPACE_ID},
+        headers={"api-key": api_key, "workspace_id": workspace_id},
     )
     if r.status_code != 201:
         logging.error(r._content)
     else:
         logging.info(f"AOI {label} set in Cloud")
-
-
-def get_aois(url: Optional[str] = URL) -> dict:
-    r = api_get(url)
-    if r.status == 200:
-        logging.info(r.result)

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.1/css/all.css" crossorigin="anonymous">
+  <title>AOIs</title>
+</head>
+<body>
+  <div class="container main">
+    <h2>Generate AOIs for your project using SAM</h2>
+    <form id="aoiForm" action="/to_cloud" method="post" enctype="multipart/form-data">
+      <i class="fas fa-image" style="color: #000000;"></i> Reference Image 
+      <input type="file" accept="image/jpg" id="image" name="image">
+      <br><br>
+      <i class="fas fa-search" style="color: #000000;"></i> Search 
+      <input type="text" id="search" name="search" size="20">
+      <br><br>
+      <i class="fas fa-code" style="color: #000000;"></i>API-Token
+      <input type="text" id="token" name="token" required minlength="44" maxlength="44" size="37">
+      <br><br>
+      <i class="fas fa-link" style="color: #000000;"></i>URL-Enrichment 
+      <input type="url" id="url" name="url" required minlength="171" maxlength="171" size="32">
+      <br><br>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('aoiForm').addEventListener('submit', function(event) {
+      var search = document.getElementById('search').value;
+      var token = document.getElementById('token').value;
+      var url = document.getElementById('url').value;
+      
+      this.action = '/to_cloud?search=' + encodeURIComponent(search) +
+                    '&token=' + encodeURIComponent(token) +
+                    '&url=' + encodeURIComponent(url);
+    });
+  </script>
+</body>
+</html>

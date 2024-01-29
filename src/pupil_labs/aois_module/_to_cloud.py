@@ -31,7 +31,7 @@ def post_aoi(
         url.split('/')[8],
     )
     # h, w = mask.shape
-    # index = index % COLORS.__len__()
+    index = index % COLORS.__len__()
     # color = COLORS[index]
     # color = tuple(int(color[i : i + 2], 16) for i in (1, 3, 5))[::-1]
     # coloredMask = np.zeros((*mask.shape, 4), dtype=np.uint8)
@@ -54,8 +54,7 @@ def post_aoi(
         "description": "string",
         "enrichment_id": enrichment_id,
         "id": str(uuid.uuid4()),
-        "mask_image_data_url": "data:image/png;base64,"
-        + mask,  # AOI_Generator.encode_img(coloredMask),
+        "mask_image_data_url": mask,  # AOI_Generator.encode_img(coloredMask),
         "name": label,
         "updated_at": datetime.utcnow().isoformat() + "Z",
     }
@@ -68,3 +67,4 @@ def post_aoi(
         logging.error(r._content)
     else:
         logging.info(f"AOI {label} set in Cloud")
+    return r

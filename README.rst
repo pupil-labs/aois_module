@@ -2,10 +2,6 @@
 Pupil Labs AOIs Module: Automate AOI Definition with GroundingSAM
 ====================================================================
 
-.. image:: https://github.com/aois_module/workflows/tests/badge.svg
-   :target: https://github.com/pupil-labs/aois_module/actions?query=workflow%3A%22tests%22
-   :alt: tests
-
 .. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json
    :target: https://github.com/astral-sh/ruff
    :alt: Ruff
@@ -24,7 +20,8 @@ Pupil Labs AOIs Module: Automate AOI Definition with GroundingSAM
 **Introduction**
 ----------------
 
-The Pupil Labs AOIs Module leverages the powerful GroundingSAM framework to automate the process of defining Areas of Interest (AOIs) within the Reference Image Mapper/Marker Mapper enrichment in Cloud. This innovative tool offers a user-friendly web interface, allowing for the upload of reference images and the specification of desired segmentation parameters. By utilizing https://github.com/IDEA-Research/Grounded-Segment-Anything for segmentation, and facilitating mask submission through our Cloud API (https://api.cloud.pupil-labs.com/v2), this module significantly streamlines the enrichment process, eliminating the need for manual mask drawing.
+The Pupil Labs AOIs Module leverages the powerful GroundingSAM framework to automate the process of defining Areas of Interest (AOIs) within the Reference Image Mapper/Marker Mapper enrichment in Cloud. This innovative tool offers a user-friendly web interface, allowing for the upload of reference images and the specification of desired segmentation parameters. By utilizing `GroundingSAM <https://github.com/IDEA-Research/Grounded-Segment-Anything>`_ for segmentation, and facilitating mask submission through our `Cloud API <https://api.cloud.pupil-labs.com/v2>`_, this module significantly streamlines the enrichment process, eliminating the need for manual mask drawing.
+
 
 **Quick Start with Google Colab**
 ---------------------------------

@@ -87,7 +87,7 @@ class AOI_Generator:
                 fx=sf,
                 fy=sf,
             ).astype(np.uint8)
-            logging.info(f"Image scaled down by: {1/sf}")
+            logging.info(f"Image scaled down by: {1 / sf}")
         return img
 
     def decode_img(self, img_str: str) -> np.array:
@@ -165,7 +165,12 @@ class AOI_Generator:
             masks = masks.reshape(masks.shape[0], masks.shape[2], masks.shape[3])
 
             def create_masks(mask, H: int, W: int) -> np.array:
-                color = "#39FF14"
+                import random
+
+                def generate_random_color_hex():
+                    return "#{:06x}".format(random.randint(0, 0xFFFFFF))
+
+                color = generate_random_color_hex()
                 color = tuple(int(color[i : i + 2], 16) for i in (1, 3, 5))[::-1]
                 coloredMask = np.zeros((*mask.shape, 4), dtype=np.uint8)
                 coloredMask[mask] = color + (255,)
@@ -182,5 +187,17 @@ class AOI_Generator:
                 }
                 for i, mask in enumerate(masks)
             ])
+            color_masks = [create_masks(mask, H, W) for i, mask in enumerate(masks)]
+        return aois, color_masks
 
-        return aois
+    def paint_image(self, image: np.array, color_masks: np.array) -> np.array:
+        if image.shape[2] == 3:
+            image = np.concatenate(
+                [image, np.full((*image.shape[:2], 1), 255, dtype=np.uint8)], axis=-1
+            )
+
+        for mask in color_masks:
+            alpha = mask[:, :, 3][:, :, np.newaxis] / 255.0
+            image = (1 - alpha) * image + alpha * mask
+
+        return image.astype(np.uint8)

@@ -24,8 +24,9 @@ repos:
     hooks:
       - id: setup-cfg-fmt
 
+repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.8
+    rev: v0.3.1
     hooks:
       - id: ruff
       - id: ruff-format

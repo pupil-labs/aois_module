@@ -30,25 +30,8 @@ def post_aoi(
         url.split('/')[6],
         url.split('/')[8],
     )
-    # h, w = mask.shape
     index = index % COLORS.__len__()
-    # color = COLORS[index]
-    # color = tuple(int(color[i : i + 2], 16) for i in (1, 3, 5))[::-1]
-    # coloredMask = np.zeros((*mask.shape, 4), dtype=np.uint8)
-    # coloredMask[mask] = color + (255,)
-    # coloredMask[~mask] = (0, 0, 0, 0)
-
     payload = {
-        # "bounding_box": {
-        #     "max_x": str(bbox[0] / w),
-        #     "max_y": str(bbox[1] / h),
-        #     "min_x": str(bbox[2] / w),
-        #     "min_y": str(bbox[3] / h),
-        # },
-        # "centroid_xy": {
-        #     "x": str(((bbox[0] / w) + (bbox[2] / w)) / 2),
-        #     "y": str(((bbox[1] / h) + (bbox[3] / h)) / 2),
-        # },
         "color": COLORS[index],
         "created_at": datetime.utcnow().isoformat() + "Z",
         "description": "string",
@@ -68,3 +51,48 @@ def post_aoi(
     else:
         logging.info(f"AOI {label} set in Cloud")
     return r
+
+
+def list_aois(url: str, api_key: str) -> dict:
+    (_, workspace_id, project_id, enrichment_id) = (
+        url.split('/')[2],
+        url.split('/')[4],
+        url.split('/')[6],
+        url.split('/')[8],
+    )
+    response = requests.get(
+        f"{API_URL}/workspaces/{workspace_id}/projects/{project_id}/enrichments/{enrichment_id}/aois",
+        headers={"api-key": api_key},
+    )
+    if response.status_code == 200:
+        aois = response.json().get('result', [])
+        aoi_ids = [aoi['id'] for aoi in aois]
+        return aoi_ids
+    else:
+        logging.error(response.text)
+        return None
+
+
+def delete_aois(
+    url: str,
+    aoi_ids: list,
+    api_key: str,
+) -> dict:
+    (_, workspace_id, project_id, enrichment_id) = (
+        url.split('/')[2],
+        url.split('/')[4],
+        url.split('/')[6],
+        url.split('/')[8],
+    )
+    payload = {"aoi_ids": aoi_ids}
+    response = requests.delete(
+        f"{API_URL}/workspaces/{workspace_id}/projects/{project_id}/enrichments/{enrichment_id}/aois",
+        json=payload,
+        headers={"api-key": api_key},
+    )
+    if response.status_code == 200:
+        logging.info("AOIs deleted successfully")
+        return response.json()
+    else:
+        logging.error(f"Failed to delete AOIs: {response.text}")
+        return response.json()

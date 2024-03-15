@@ -2,19 +2,20 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any, List
 
+import cv2
 import nest_asyncio
 import uvicorn
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from rich.logging import RichHandler  # For logging
-from starlette.responses import FileResponse
-
 from pupil_labs.aois_module._AOIs import AOI_Generator
-from pupil_labs.aois_module._to_cloud import post_aoi
+from pupil_labs.aois_module._to_cloud import delete_aois, list_aois, post_aoi
+from pydantic import BaseModel, Field
+from rich.logging import RichHandler
+from starlette.responses import FileResponse
 
 logging.getLogger("defineAOIs")
 logging.basicConfig(
@@ -55,7 +56,26 @@ app.add_middleware(
 
 class SegmentRequest(BaseModel):
     image: str
-    text: str
+    search: str
+
+
+class Segment(BaseModel):
+    label: str
+    mask: str
+
+
+class SegmentResponse(BaseModel):
+    segments: List[Segment]
+    image: str
+
+
+class CloudDetails(BaseModel):
+    token: str = Field(default="")
+    url: str = Field(default="")
+
+
+class CloudPayload(CloudDetails):
+    formatted_segments: List[Segment]
 
 
 @app.get("/")
@@ -63,51 +83,123 @@ async def root():
     return FileResponse(os.path.join(static_folder, "index.html"))
 
 
-@app.post("/segment")
-async def segment(request: SegmentRequest):
-    image = app.AOI.decode_img(request.image)
-    image = app.AOI.scale_img(image)
+@app.post("/scale")
+async def scale(image: UploadFile = File(...)) -> Any:
+    """
+    Scales the uploaded image using predefined settings.
 
-    pred_names, boxes = app.AOI.predict_dino(image, request.text)
-    aois = app.AOI.predict_sam(image, pred_names, boxes)
+    Args:
+        image (UploadFile): The image file to be scaled.
 
-    segments_list = aois.to_dict(orient="records")
-    formatted_segments = [
-        {"label": segment["label"], "mask": segment["mask"]}
-        for segment in segments_list
-    ]
-    logging.info(formatted_segments)
-    return JSONResponse(content=formatted_segments)
+    Returns:
+        FileResponse: The scaled image as a file response.
+    """
+    try:
+        temp_file_path = Path(__file__).parent / "temp_image.jpg"
+
+        with temp_file_path.open("wb") as buffer:
+            buffer.write(await image.read())
+
+        img = cv2.imread(str(temp_file_path))
+        scaled_img = app.AOI.scale_img(img)
+        scaled_img_enc = app.AOI.encode_img(scaled_img)
+        logging.info(f"New size:{scaled_img.shape}")
+        return JSONResponse(
+            content={
+                "height": int(scaled_img.shape[0]),
+                "width": int(scaled_img.shape[1]),
+                "image": scaled_img_enc,
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error scaling the image: {e}")
+    finally:
+        if temp_file_path.exists():
+            temp_file_path.unlink()
+
+
+@app.post("/segment", response_model=SegmentResponse)
+async def segment(request: SegmentRequest) -> SegmentResponse:
+    """
+    Segments the uploaded image based on the provided text.
+
+    Args:
+        image (UploadFile): The image file to segment.
+        text (str): The text describing what to segment in the image.
+
+    Returns:
+        SegmentResponse: The segmentation result including labels and masks, and the processed image.
+    """
+    try:
+        img = app.AOI.decode_img(request.image)
+        pred_names, boxes = app.AOI.predict_dino(img, request.search)
+        aois, c_masks = app.AOI.predict_sam(img, pred_names, boxes)
+
+        segments_list = aois.to_dict(orient="records")
+        formatted_segments = [
+            {"label": segment["label"], "mask": segment["mask"]}
+            for segment in segments_list
+        ]
+
+        logging.info(formatted_segments)
+
+        img = app.AOI.paint_image(img, c_masks)
+        encoded_image = app.AOI.encode_img(img)
+
+        return JSONResponse(
+            content={"segments": formatted_segments, "image": encoded_image}
+        )
+    except Exception as e:
+        logging.error(f"Error processing the image: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.post("/to_cloud")
-async def to_cloud(
-    image: UploadFile = File(), search: str = "", token: str = "", url: str = ""
-):
-    """This function processes an uploaded image and sends data to cloud."""
+async def to_cloud(payload: CloudPayload):
+    """
+    Sends formatted segment data to the cloud.
 
-    file_path = os.path.join(Path(__file__).parent, "image.jpeg")
-    with open(file_path, "wb") as buffer:
-        buffer.write(await image.read())
+    Args:
+        payload (CloudPayload): A payload containing formatted segments, a token, and a URL.
 
-    import cv2
+    Returns:
+        dict: A message indicating the result of the operation.
+    """
+    try:
+        for index, aoi in enumerate(payload.formatted_segments):
+            post_aoi(aoi.mask, aoi.label, [], index, payload.url, payload.token)
+        return {"message": "Processed and data sent to cloud"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to send data to cloud: {str(e)}"
+        )
 
-    image = cv2.imread(file_path)
-    image = app.AOI.scale_img(image)
-    pred_names, boxes = app.AOI.predict_dino(image, search)
-    aois = app.AOI.predict_sam(image, pred_names, boxes)
-    for index, aoi in aois.iterrows():
-        post_aoi(aoi['mask'], aoi['label'], [], index, url, token)
 
-    return {"message": "Processed and data sent to cloud"}
+@app.post("/delete")
+async def delete(payload: CloudDetails):
+    """
+    Sends formatted segment data to the cloud.
+
+    Args:
+        payload (CloudPayload): A payload containing formatted segments, a token, and a URL.
+
+    Returns:
+        dict: A message indicating the result of the operation.
+    """
+    try:
+        aoi_ids = list_aois(url=payload.url, api_key=payload.token)
+        logging.info(aoi_ids)
+        delete_aois(url=payload.url, api_key=payload.token, aoi_ids=aoi_ids)
+        return {"message": "Processed and data sent to cloud"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to delete data from cloud: {str(e)}"
+        )
 
 
 def main():
     nest_asyncio.apply()
-    uvicorn.run(
-        app,
-        port=8002,
-    )
+    uvicorn.run("_defineAOIs:app", port=8002, reload=True, log_level="info")
 
 
 if __name__ == "__main__":

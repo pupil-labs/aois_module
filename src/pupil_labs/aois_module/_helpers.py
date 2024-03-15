@@ -1,46 +1,10 @@
 import logging
 import os
-import platform
-import tkinter as tk  # For GUI
-from tkinter import filedialog
 
 import cv2
 import numpy as np
 from PIL import ImageFont
 from pycocotools import mask as mask_utils
-
-
-def get_path():
-    root = tk.Tk()
-    root.withdraw()
-    msg = "Select the directory"
-    arguments = {"title": msg}
-    if platform.system() == "Darwin":
-        arguments["message"] = msg
-    path = filedialog.askdirectory(**arguments)
-    # check if the folder contains the required files
-    if (
-        not os.path.exists(os.path.join(path, "fixations.csv"))
-        or not os.path.exists(os.path.join(path, "gaze.csv"))
-        or not os.path.exists(os.path.join(path, "sections.csv"))
-        or not os.path.exists(os.path.join(path, "reference_image.jpeg"))
-    ):
-        error = "The selected folder does not contain a reference_image.jpeg, fixations.csv, gaze.csv or sections.csv files"
-        logging.error(error)
-        raise SystemExit(error)
-    root.destroy()
-    return path
-
-
-def confirm_read(filename):
-    logging.info("AOIs already defined on that folder")
-    from tkinter.messagebox import askyesno
-
-    yn = askyesno(
-        f"AOIs already defined on that folder {filename}",
-        "Do you want to use them?",
-    )
-    return yn
 
 
 def scale_img(self, save=False):
@@ -92,5 +56,4 @@ def draw_box(boxes, labels, draw, colors):
             bbox = (box[0], box[1], w + box[0], box[1] + h)
         draw.rectangle(bbox, fill=color)
         draw.text((box[0], box[1]), str(label), fill="white")
-
         draw.text((box[0], box[1]), label)

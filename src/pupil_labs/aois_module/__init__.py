@@ -5,6 +5,11 @@ try:
 except ImportError:
     from importlib_metadata import PackageNotFoundError, version
 
+import struct
+
+if struct.calcsize("P") * 8 != 64:
+    raise Exception("Sorry, this script only works on 64 bit systems!")
+
 try:
     __version__ = version("pupil_labs.aois_module")
 except PackageNotFoundError:

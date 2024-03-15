@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap"
+			rel="stylesheet"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://use.fontawesome.com/releases/v5.12.1/css/all.css"
+			crossorigin="anonymous"
+		/>
+		<link rel="stylesheet" href="/static/css/styles.css" />
+		<script src="/static/js/scripts.js" defer></script>
+		<title>AOIs</title>
+	</head>
+	<body>
+		<audio
+			id="click-sound"
+			src="https://framerusercontent.com/assets/bR5uOMNR5rTv9Fi8cZl8LWxRGe8.wav"
+			preload="metadata"
+		></audio>
+		<audio
+			id="load-sound"
+			src="https://framerusercontent.com/assets/OLpRqpSuLjpTTlLD7o4ozNjSgY.wav"
+			preload="metadata"
+		></audio>
+		<div class="main-container">
+			<div class="title-box">
+				Generate AOIs for your project using SAM
+			</div>
+			<div id="drop_zone" class="drag-area">
+				<div class="input-container">
+					<i class="fas fa-image input-icon"></i>Drag or Click to add
+					a Reference Image
+				</div>
+			</div>
+			<input type="file" accept="image/*" id="image" name="image" />
+			<div class="input-container">
+				<i class="fas fa-search input-icon"></i>
+				<div class="input-text">Search</div>
+				<input
+					type="text"
+					id="search"
+					name="search"
+					placeholder="Object1 . Object2 . Object3"
+				/>
+			</div>
+			<div class="input-container">
+				<i class="fas fa-code input-icon"></i>
+				<div class="input-text">API-Token</div>
+				<input
+					type="password"
+					id="token"
+					name="token"
+					required
+					minlength="44"
+					maxlength="44"
+					placeholder="Your token"
+				/>
+			</div>
+			<div class="input-container">
+				<i class="fas fa-link input-icon"></i>
+				<div class="input-text">URL-Enrichment</div>
+				<input
+					type="url"
+					id="url"
+					name="url"
+					required
+					minlength="171"
+					maxlength="171"
+					placeholder="The URL of your enrichment"
+				/>
+			</div>
+			<div class="button-container">
+				<button id="segmentButton" type="button" class="button blue">
+					<i class="fas fa-search btn-icon"></i>
+					<div class="spinner">
+						<div class="spinner-inner"></div>
+					</div>
+					<span>Look for items on the image</span>
+				</button>
+
+				<button id="submitButton" type="submit" class="button blue">
+					<i class="fas fa-cloud btn-icon"></i>
+					<div class="spinner">
+						<div class="spinner-inner"></div>
+					</div>
+					<span>Submit the segmented AOIs to Cloud.</span>
+				</button>
+
+				<button id="deleteButton" type="button" class="button delete">
+					<i class="fas fa-trash btn-icon"></i>
+					<div class="spinner">
+						<div class="spinner-inner"></div>
+					</div>
+					<span>Delete all AOIs on your enrichment</span>
+				</button>
+			</div>
+		</div>
+	</body>
+</html>

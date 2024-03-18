@@ -27,7 +27,7 @@ The Pupil Labs AOIs Module leverages the powerful GroundingSAM framework to auto
 ---------------------------------
 
 .. image:: https://img.shields.io/static/v1?label=&message=Open%20in%20Google%20Colab&color=blue&labelColor=grey&logo=Google%20Colab&logoColor=#F9AB00
-   :target: https://colab.research.google.com/drive/1s6mBNAhcnxhJlqxeaQ2IZMk_Ca381p25?usp=sharing
+   :target: https://colab.research.google.com/drive/1SJQS6-P56wpDxJTNfZeuzwZADKK9h6ri?usp=sharing
    :alt: Open in Google Colab
 
 **Local Installation**

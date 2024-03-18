@@ -197,9 +197,14 @@ async def delete(payload: CloudDetails):
         )
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(os.path.join(static_folder, "favicon.ico"))
+
+
 def main():
     nest_asyncio.apply()
-    uvicorn.run("_defineAOIs:app", port=8002, reload=True, log_level="info")
+    uvicorn.run(app, port=8002, log_level="info")
 
 
 if __name__ == "__main__":
